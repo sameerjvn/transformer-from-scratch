@@ -1,0 +1,3 @@
+before pretokenization: 
+vocab: ['es', 'est', 'lo', 'low', 'est ', 'ne']
+merges: [(b'e', b's'), (b'es', b't'), (b'l', b'o'), (b'lo', b'w'), (b'est', b' '), (b'n', b'e')]

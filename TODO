@@ -1,0 +1,8 @@
+- [DONE] Get tokenizer training to work
+- [DONE] translate to adapters.run_train.bpe code
+- pass all default tests
+
+- [DONE] add more tests - stylized example
+- [DONE] break ties by taking the lexographically greatest pair
+- add pretokenization
+- add multiprocessing
