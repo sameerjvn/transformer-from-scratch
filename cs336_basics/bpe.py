@@ -109,13 +109,8 @@ def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str]) -> B
     return BPETokenizerParams(vocab=vocab, merges=merges)
 
 if __name__ == "__main__":
-    dataset_path = Path("data/bpe_example.txt")
-    bpe_params_save_path = Path("artifacts/bpe_params.json")
+    dataset_path = Path("data/TinyStories-valid.txt")
     vocab_size = 262
     special_tokens = ["<|endoftext|>"]
 
     bpe_tokenizer_params = train_bpe(dataset_path, vocab_size, special_tokens)
-
-    bpe_params_save_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(bpe_params_save_path, "wb") as f:
-        pkl.dump(bpe_tokenizer_params, f)
