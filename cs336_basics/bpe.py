@@ -1,21 +1,16 @@
 from collections import defaultdict
 from pathlib import Path
 from pydantic import BaseModel
-import pickle as pkl
+import regex as re
 
 class BPETokenizerParams(BaseModel):
     vocab: dict[int, bytes]
     merges: list[tuple[bytes, bytes]]
 
-def split_data_into_pretokens_and_counts(data: bytes) -> dict[tuple[bytes], int]:
-    # split by \n
-    data_lines = data.splitlines()
+def pretokenize(data: bytes) -> dict[tuple[bytes], int]:
+    PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    # split by whitespace
-    pretokens = []
-    for line in data_lines:
-        tokens = line.split(b' ')
-        pretokens.extend(tokens)
+    pretokens = re.findall(PAT, data)
 
     pretokens_to_counts = defaultdict(int)
 
@@ -94,7 +89,7 @@ def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str]) -> B
         # remove special token from the data, since it should not affect BPE training
         data = data.replace(token_bytes, b"")
 
-    pretokens_to_counts = split_data_into_pretokens_and_counts(data)
+    pretokens_to_counts = pretokenize(data)
 
     while len(vocab) < vocab_size:
         bytes_pair = find_most_frequent_pair(pretokens_to_counts)

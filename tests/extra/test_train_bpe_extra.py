@@ -1,5 +1,9 @@
-from .adapters import run_train_bpe
-from .common import FIXTURES_PATH
+import time
+import regex as re
+from cs336_basics.bpe import pretokenize
+from ..adapters import run_train_bpe
+from ..common import FIXTURES_PATH
+
 
 def test_train_bpe_stylized_example():
     """
@@ -28,3 +32,28 @@ def test_train_bpe_stylized_example():
     expected_vocab = all_byte_values.union(special_token_values).union(merged_values)
 
     assert set(vocab.values()) == expected_vocab
+
+def test_pretokenize_speed():
+    input_path = FIXTURES_PATH / "corpus.en"
+
+    with open(input_path, "rb") as f:
+        data = f.read()
+
+    start_time = time.time()
+
+    for _ in range(500-256):
+        pretokens_to_counts = pretokenize(data)
+
+    end_time = time.time()
+    time_secs = end_time - start_time
+
+    assert time_secs < 1
+
+def test_regex_works_on_bytes():
+    data = b"some text that i'll pre-tokenize"
+    PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+    expected = [b'some', b' text', b' that', b' i', b"'ll", b' pre', b'-', b'tokenize']
+
+    matches = re.findall(PAT, data)
+
+    assert matches == expected

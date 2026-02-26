@@ -4,5 +4,8 @@
 
 - [DONE] add more tests - stylized example
 - [DONE] break ties by taking the lexographically greatest pair
-- add pretokenization
+- [DONE] add pretokenization
+- [DONE] migrate to GPT-2 pretoken splitter regex
+- [DONE] pass the stylized example test
 - add multiprocessing
+- 
