@@ -7,10 +7,11 @@ class BPETokenizerParams(BaseModel):
     vocab: dict[int, bytes]
     merges: list[tuple[bytes, bytes]]
 
-def pretokenize(data: bytes) -> dict[tuple[bytes], int]:
-    PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    pretokens = re.findall(PAT, data)
+def pretokenize(data: bytes) -> dict[tuple[bytes], int]:
+
+    pretokens = re.finditer(PAT, data)
 
     pretokens_to_counts = defaultdict(int)
 

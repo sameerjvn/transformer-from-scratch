@@ -1,0 +1,25 @@
+before pretokenization: 
+vocab: ['es', 'est', 'lo', 'low', 'est ', 'ne']
+merges: [(b'e', b's'), (b'es', b't'), (b'l', b'o'), (b'lo', b'w'), (b'est', b' '), (b'n', b'e')]
+
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   15.406   15.406 {built-in method builtins.exec}
+      244    6.364    0.026   15.179    0.062 bpe.py:12(pretokenize)
+        5    0.025    0.005   13.364    2.673 base_events.py:1922(_run_once)
+        5    0.088    0.018   10.058    2.012 selectors.py:451(select)
+ 39258624    6.908    0.000    6.908    0.000 bpe.py:19(<genexpr>)
+        1    0.000    0.000    3.717    3.717 <string>:1(<module>)
+        1    0.027    0.027    3.717    3.717 1532789026.py:4(run)
+      244    0.002    0.000    1.969    0.008 regex.py:331(findall)
+      244    1.952    0.008    1.952    0.008 {method 'findall' of '_regex.Pattern' objects}
+        5    0.025    0.005    0.061    0.012 {method 'poll' of 'select.epoll' objects}
+      244    0.006    0.000    0.015    0.000 regex.py:449(_compile)
+        2    0.012    0.006    0.012    0.006 {method '__exit__' of 'sqlite3.Connection' objects}
+      494    0.002    0.000    0.006    0.000 enum.py:1561(__and__)
+     1524    0.002    0.000    0.003    0.000 enum.py:1543(_get_value)
+        6    0.000    0.000    0.002    0.000 events.py:86(_run)
+2815/2811    0.001    0.000    0.002    0.000 {built-in method builtins.isinstance}
+        6    0.000    0.000    0.001    0.000 {method 'run' of '_contextvars.Context' objects}
+      514    0.001    0.000    0.001    0.000 enum.py:720(__call__)
+      248    0.001    0.000    0.001    0.000 <frozen importlib._bootstrap>:1390(_handl
