@@ -7,17 +7,22 @@ class BPETokenizerParams(BaseModel):
     vocab: dict[int, bytes]
     merges: list[tuple[bytes, bytes]]
 
-PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+PAT = re.compile(rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
 
 def pretokenize(data: bytes) -> dict[tuple[bytes], int]:
 
-    pretokens = re.finditer(PAT, data)
+    pretokens = PAT.finditer(data)
 
+    unique_pretokens_to_counts = defaultdict(int)
     pretokens_to_counts = defaultdict(int)
 
     for token in pretokens:
-        split_token = tuple(bytes([b]) for b in token)
-        pretokens_to_counts[split_token] += 1
+        token_bytes = token.group()
+        unique_pretokens_to_counts[token_bytes] += 1
+
+    for token_bytes, counts in unique_pretokens_to_counts.items():
+        split_token = tuple(bytes([b]) for b in token_bytes)
+        pretokens_to_counts[split_token] = counts
 
     return pretokens_to_counts
 
