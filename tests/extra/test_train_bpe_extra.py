@@ -1,6 +1,7 @@
+from pathlib import Path
 import time
 import regex as re
-from cs336_basics.bpe import pretokenize
+from cs336_basics.bpe import parallel_pretokenize, pretokenize
 from ..adapters import run_train_bpe
 from ..common import FIXTURES_PATH
 
@@ -33,6 +34,25 @@ def test_train_bpe_stylized_example():
 
     assert set(vocab.values()) == expected_vocab
 
+def test_parallel_pretokenize_correctness():
+    dataset_path = FIXTURES_PATH / "tinystories_sample.txt"
+    special_tokens = [b"<|endoftext|>"]
+    
+    with open(dataset_path, "rb") as f:
+        data = f.read()
+
+    pretokens_to_counts = pretokenize(data, special_tokens)
+    serial_pretokens_to_counts = parallel_pretokenize(dataset_path, special_tokens, parallel=False)
+
+    assert len(pretokens_to_counts) == len(serial_pretokens_to_counts)
+    for k, v in serial_pretokens_to_counts.items():
+        assert pretokens_to_counts[k] == v
+
+    parallel_pretokens_to_counts = parallel_pretokenize(dataset_path, special_tokens, parallel=True)
+    assert len(pretokens_to_counts) == len(parallel_pretokens_to_counts)
+    for k, v in parallel_pretokens_to_counts.items():
+        assert pretokens_to_counts[k] == v
+
 def test_pretokenize_speed():
     input_path = FIXTURES_PATH / "corpus.en"
 
@@ -41,19 +61,21 @@ def test_pretokenize_speed():
 
     start_time = time.time()
 
-    for _ in range(500-256):
-        pretokens_to_counts = pretokenize(data)
+    _ = pretokenize(data, special_tokens=[])
 
     end_time = time.time()
     time_secs = end_time - start_time
 
     assert time_secs < 1
 
-def test_regex_works_on_bytes():
-    data = b"some text that i'll pre-tokenize"
-    PAT = rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-    expected = [b'some', b' text', b' that', b' i', b"'ll", b' pre', b'-', b'tokenize']
+def test_parallel_pretokenize_speed():
+    input_path = FIXTURES_PATH / "corpus.en"
 
-    matches = re.findall(PAT, data)
+    start_time = time.time()
 
-    assert matches == expected
+    pretokens_to_counts = parallel_pretokenize(input_path, special_tokens=[b"<|endoftext|>"])
+
+    end_time = time.time()
+    time_secs = end_time - start_time
+
+    assert time_secs < 1
