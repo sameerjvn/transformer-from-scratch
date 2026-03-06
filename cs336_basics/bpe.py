@@ -93,18 +93,11 @@ def parallel_pretokenize_and_split(dataset_path: Path, special_tokens: list[byte
 def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tuple[bytes, bytes]:
     # initialize counts of byte pairs
     counts: dict[tuple[bytes, bytes], int] = defaultdict(int)
-    byte_pairs = set() # 
 
     # count byte pair frequencies
-    for pretoken in pretokens_to_counts.keys():
+    for pretoken, count in pretokens_to_counts.items():
         for byte_pair in zip(pretoken, pretoken[1:]):
-            byte_pairs.add(byte_pair)
-    
-    for byte_pair in byte_pairs:
-        for pretoken, count in pretokens_to_counts.items():
-            for bp in zip(pretoken, pretoken[1:]):
-                if byte_pair == bp:
-                    counts[byte_pair] += count
+            counts[byte_pair] += count
             
     # find most frequent index pair
     bytes_pair: tuple[bytes, bytes] = tuple()
