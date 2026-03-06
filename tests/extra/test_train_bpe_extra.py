@@ -1,7 +1,7 @@
 from pathlib import Path
 import time
 import regex as re
-from cs336_basics.bpe import parallel_pretokenize, pretokenize
+from cs336_basics.bpe import find_most_frequent_pair, parallel_pretokenize, pretokenize
 from ..adapters import run_train_bpe
 from ..common import FIXTURES_PATH
 
@@ -60,22 +60,19 @@ def test_pretokenize_speed():
         data = f.read()
 
     start_time = time.time()
-
     _ = pretokenize(data, special_tokens=[])
-
     end_time = time.time()
-    time_secs = end_time - start_time
 
+    time_secs = end_time - start_time
     assert time_secs < 1
+    
 
 def test_parallel_pretokenize_speed():
     input_path = FIXTURES_PATH / "corpus.en"
 
     start_time = time.time()
-
     pretokens_to_counts = parallel_pretokenize(input_path, special_tokens=[b"<|endoftext|>"])
-
     end_time = time.time()
-    time_secs = end_time - start_time
 
+    time_secs = end_time - start_time
     assert time_secs < 1
