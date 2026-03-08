@@ -93,19 +93,11 @@ def parallel_pretokenize_and_split(dataset_path: Path, special_tokens: list[byte
 def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tuple[bytes, bytes]:
     # initialize counts of byte pairs
     counts: dict[tuple[bytes, bytes], int] = defaultdict(int)
-    byte_pairs = set() # 
 
     # count byte pair frequencies
-    for pretoken in pretokens_to_counts.keys():
+    for pretoken, count in pretokens_to_counts.items():
         for byte_pair in zip(pretoken, pretoken[1:]):
-            byte_pairs.add(byte_pair)
-    
-    for byte_pair in byte_pairs:
-        for pretoken, count in pretokens_to_counts.items():
-            for bp in zip(pretoken, pretoken[1:]):
-                if byte_pair == bp:
-                    counts[byte_pair] += count
-
+            counts[byte_pair] += count
             
     # find most frequent index pair
     bytes_pair: tuple[bytes, bytes] = tuple()
@@ -141,10 +133,7 @@ def merge(pretokens_to_counts: dict[tuple[bytes], int], bytes_pair: tuple[bytes,
 
     return new_pretokens_to_counts
 
-def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str]) -> BPETokenizerParams:
-
-    with open(input_path, "rb") as f:
-        data = f.read()
+def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str], parallel: bool = True) -> BPETokenizerParams:
 
     # initialize vocab for all the default bytes in UTF-8
     vocab: dict[int, bytes] = {i: bytes([i]) for i in range(256)}
@@ -155,10 +144,7 @@ def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str]) -> B
     for i, token_bytes in enumerate(special_tokens_bytes):
         vocab[(max(vocab) + i + 1)] = token_bytes
 
-        # remove special token from the data, since it should not affect BPE training
-        data = data.replace(token_bytes, b"")
-
-    pretokens_to_counts = pretokenize_and_split(data, special_tokens_bytes)
+    pretokens_to_counts = parallel_pretokenize_and_split(input_path, special_tokens_bytes, parallel)
 
     while len(vocab) < vocab_size:
         bytes_pair = find_most_frequent_pair(pretokens_to_counts)
