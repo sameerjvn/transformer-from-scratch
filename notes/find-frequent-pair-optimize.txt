@@ -1,12 +1,48 @@
 eg:
 
-"the cat is in the path
+ROUND 1:
+"the cat is in the path. th th he"
 pretokens_to_counts: {
     ("t", "h", "e"): 2,
     ("c", "a", "t"): 1,
     ("i", "s"): 1,
     ("i", "n"): 1,
     ("p", "a", "t", "h"): 1,
+    ("t", "h"): 2,
+    ("h", "e"): 1,
 }
 
-byte_pair_freqs = 
+byte_pair_freqs = {
+    ("t", "h"): 5,
+    ("h", "e"): 3,
+    ("c", "a"): 1,
+    ("a", "t"): 2,
+    ("i", "s"): 1,
+    ("i", "n"): 1,
+    ("p", "a"): 1,
+}
+
+merge: ("t", "h")
+
+ROUND 2:
+new_pretokens_to_counts: {
+    ("th", "e"): 2,
+    ("c", "a", "t"): 1,
+    ("i", "s"): 1,
+    ("i", "n"): 1,
+    ("p", "a", "th"): 1,
+    ("th"): 2,
+    ("h", "e"): 1,
+}
+
+byte_pair_freqs: {
+    ("t", "h"): 5,      # affected: -5
+    ("h", "e"): 1,      # affected: -2
+    ("c", "a"): 1,
+    ("a", "t"): 2,
+    ("i", "s"): 1,
+    ("i", "n"): 1,
+    ("p", "a"): 1,
+    ("th", "e"): 2,     # new one
+    ("a", "th"): 1,     # new one
+}
