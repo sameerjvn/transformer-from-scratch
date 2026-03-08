@@ -1,0 +1,12 @@
+eg:
+
+"the cat is in the path
+pretokens_to_counts: {
+    ("t", "h", "e"): 2,
+    ("c", "a", "t"): 1,
+    ("i", "s"): 1,
+    ("i", "n"): 1,
+    ("p", "a", "t", "h"): 1,
+}
+
+byte_pair_freqs = 

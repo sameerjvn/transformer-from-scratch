@@ -92,25 +92,25 @@ def parallel_pretokenize_and_split(dataset_path: Path, special_tokens: list[byte
 
 def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tuple[bytes, bytes]:
     # initialize counts of byte pairs
-    counts: dict[tuple[bytes, bytes], int] = defaultdict(int)
+    byte_pair_freqs: dict[tuple[bytes, bytes], int] = defaultdict(int)
 
     # count byte pair frequencies
     for pretoken, count in pretokens_to_counts.items():
         for byte_pair in zip(pretoken, pretoken[1:]):
-            counts[byte_pair] += count
+            byte_pair_freqs[byte_pair] += count
             
     # find most frequent index pair
-    bytes_pair: tuple[bytes, bytes] = tuple()
-    bytes_pair_freq = 0
+    most_freq_pair: tuple[bytes, bytes] = tuple()
+    most_freq_count = 0
 
-    for count_pair, count in counts.items():
-        if count > bytes_pair_freq or (count == bytes_pair_freq and count_pair > bytes_pair):
-            bytes_pair_freq = count
-            bytes_pair = count_pair
+    for byte_pair, count in byte_pair_freqs.items():
+        if count > most_freq_count or (count == most_freq_count and byte_pair > most_freq_pair):
+            most_freq_count = count
+            most_freq_pair = byte_pair
 
-    return bytes_pair
+    return most_freq_pair
 
-def merge(pretokens_to_counts: dict[tuple[bytes], int], bytes_pair: tuple[bytes, bytes]) -> dict[tuple[bytes], int]:
+def merge(pretokens_to_counts: dict[tuple[bytes], int], byte_pair: tuple[bytes, bytes]) -> dict[tuple[bytes], int]:
     new_pretokens_to_counts = {}
 
     for pretoken, counts in pretokens_to_counts.items():
@@ -119,7 +119,7 @@ def merge(pretokens_to_counts: dict[tuple[bytes], int], bytes_pair: tuple[bytes,
         i = 0
         while i < (len(pretoken) - 1):
             bp = [pretoken[i], pretoken[i+1]]
-            if tuple(bp) == bytes_pair:
+            if tuple(bp) == byte_pair:
                 new_pretoken.append(pretoken[i] + pretoken[i+1])
                 i += 1
             elif (i == len(pretoken) - 2):
@@ -147,14 +147,14 @@ def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str], para
     pretokens_to_counts = parallel_pretokenize_and_split(input_path, special_tokens_bytes, parallel)
 
     while len(vocab) < vocab_size:
-        bytes_pair = find_most_frequent_pair(pretokens_to_counts)
-        byte_1, byte_2 = bytes_pair
+        byte_pair = find_most_frequent_pair(pretokens_to_counts)
+        byte_1, byte_2 = byte_pair
 
         target_index = max(vocab) + 1
         vocab[target_index] = byte_1 + byte_2
-        pretokens_to_counts = merge(pretokens_to_counts, bytes_pair)
+        pretokens_to_counts = merge(pretokens_to_counts, byte_pair)
 
-        merges.append(bytes_pair) 
+        merges.append(byte_pair) 
 
     return BPETokenizerParams(vocab=vocab, merges=merges)
 

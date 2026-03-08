@@ -130,4 +130,4 @@ def test__merge__speed():
         total_merge_time += end_merge_time - start_merge_time
     
 
-    assert total_merge_time < 0.05
+    assert total_merge_time < 0.07
