@@ -1,7 +1,11 @@
-from pathlib import Path
 import time
-import regex as re
-from cs336_basics.bpe import find_most_frequent_pair, merge, parallel_pretokenize, parallel_pretokenize_and_split, pretokenize
+from cs336_basics.bpe import (
+    find_most_frequent_pair,
+    merge,
+    parallel_pretokenize,
+    parallel_pretokenize_and_split,
+    pretokenize,
+)
 from ..adapters import run_train_bpe
 from ..common import FIXTURES_PATH
 
@@ -19,25 +23,27 @@ def test_train_bpe_stylized_example():
         special_tokens=special_tokens,
     )
 
-    assert merges == [(b's', b't'),
-                      (b'e', b'st'),
-                      (b'o', b'w'),
-                      (b'l', b'ow'),
-                      (b'w', b'est'),
-                      (b'n', b'e'),
-                      ]
-    
+    assert merges == [
+        (b"s", b"t"),
+        (b"e", b"st"),
+        (b"o", b"w"),
+        (b"l", b"ow"),
+        (b"w", b"est"),
+        (b"n", b"e"),
+    ]
+
     all_byte_values = {bytes([i]) for i in range(256)}
-    special_token_values = {"<|endoftext|>".encode("utf-8")}
-    merged_values = {b'st', b'est', b'ow', b'low', b'west', b'ne'}
+    special_token_values = {b"<|endoftext|>"}
+    merged_values = {b"st", b"est", b"ow", b"low", b"west", b"ne"}
     expected_vocab = all_byte_values.union(special_token_values).union(merged_values)
 
     assert set(vocab.values()) == expected_vocab
 
+
 def test_parallel_pretokenize_correctness():
     dataset_path = FIXTURES_PATH / "tinystories_sample.txt"
     special_tokens = [b"<|endoftext|>"]
-    
+
     with open(dataset_path, "rb") as f:
         data = f.read()
 
@@ -53,6 +59,7 @@ def test_parallel_pretokenize_correctness():
     for k, v in parallel_pretokens_to_counts.items():
         assert pretokens_to_counts[k] == v
 
+
 def test_pretokenize_speed():
     input_path = FIXTURES_PATH / "corpus.en"
 
@@ -65,17 +72,18 @@ def test_pretokenize_speed():
 
     time_secs = end_time - start_time
     assert time_secs < 1
-    
+
 
 def test_parallel_pretokenize_speed():
     input_path = FIXTURES_PATH / "corpus.en"
 
     start_time = time.time()
-    pretokens_to_counts = parallel_pretokenize(input_path, special_tokens=[b"<|endoftext|>"])
+    _ = parallel_pretokenize(input_path, special_tokens=[b"<|endoftext|>"])
     end_time = time.time()
 
     time_secs = end_time - start_time
     assert time_secs < 1
+
 
 def test__find_most_frequent_pair__correctness():
     num_merges = 6
@@ -89,8 +97,8 @@ def test__find_most_frequent_pair__correctness():
         pair = find_most_frequent_pair(pretokens_to_counts)
         pairs.append(pair)
         pretokens_to_counts = merge(pretokens_to_counts, pair)
-    
-    expected_pairs = [(b's', b't'), (b'e', b'st'), (b'o', b'w'), (b'l', b'ow'), (b'w', b'est'), (b'n', b'e')]
+
+    expected_pairs = [(b"s", b"t"), (b"e", b"st"), (b"o", b"w"), (b"l", b"ow"), (b"w", b"est"), (b"n", b"e")]
     assert pairs == expected_pairs
 
 
@@ -109,9 +117,9 @@ def test__find_most_frequent_pair__speed():
         total_find_time += end_find_time - start_find_time
 
         pretokens_to_counts = merge(pretokens_to_counts, pair)
-    
 
     assert total_find_time < 0.05
+
 
 def test__merge__speed():
     num_merges = 6
@@ -123,11 +131,10 @@ def test__merge__speed():
     total_merge_time = 0
     for _ in range(num_merges):
         pair = find_most_frequent_pair(pretokens_to_counts)
-        
+
         start_merge_time = time.perf_counter()
         pretokens_to_counts = merge(pretokens_to_counts, pair)
         end_merge_time = time.perf_counter()
         total_merge_time += end_merge_time - start_merge_time
-    
 
     assert total_merge_time < 0.07

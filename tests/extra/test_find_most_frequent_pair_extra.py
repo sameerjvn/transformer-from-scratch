@@ -1,7 +1,5 @@
-import pytest
 import time
 import random
-from collections import Counter
 
 from cs336_basics.bpe import find_most_frequent_pair
 

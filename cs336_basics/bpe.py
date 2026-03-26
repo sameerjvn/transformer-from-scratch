@@ -6,20 +6,23 @@ import regex as re
 
 from cs336_basics.pretokenization_example import find_chunk_boundaries
 
+
 class BPETokenizerParams(BaseModel):
     vocab: dict[int, bytes]
     merges: list[tuple[bytes, bytes]]
 
+
 PAT = re.compile(rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+
 
 def count_unique_pretokens_in_chunk(dataset_path, special_tokens, boundary_pair) -> dict[bytes, int]:
     start, end = boundary_pair
     with open(dataset_path, "rb") as f:
         f.seek(start)
         chunk = f.read(end - start)
-        
+
     escaped_special_tokens = [re.escape(token) for token in special_tokens]
-    stripped_chunks = re.split(b'|'.join(escaped_special_tokens), chunk)
+    stripped_chunks = re.split(b"|".join(escaped_special_tokens), chunk)
 
     unique_pretokens_to_counts_in_chunk = defaultdict(int)
 
@@ -31,13 +34,14 @@ def count_unique_pretokens_in_chunk(dataset_path, special_tokens, boundary_pair)
 
     return unique_pretokens_to_counts_in_chunk
 
+
 def parallel_pretokenize(dataset_path: Path, special_tokens: list[bytes], parallel: bool = True) -> dict[bytes, int]:
     num_processes = multiprocessing.cpu_count()
 
     with open(dataset_path, "rb") as f:
         boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
 
-    boundary_pairs = [(boundaries[i], boundaries[i+1]) for i in range(len(boundaries)-1)]
+    boundary_pairs = [(boundaries[i], boundaries[i + 1]) for i in range(len(boundaries) - 1)]
 
     unique_pretokens_to_counts = defaultdict(int)
     all_pretoken_counts: list[dict[bytes, int]] = []
@@ -48,19 +52,22 @@ def parallel_pretokenize(dataset_path: Path, special_tokens: list[bytes], parall
             all_pretoken_counts = pool.starmap(count_unique_pretokens_in_chunk, args)
     else:
         for boundary_pair in boundary_pairs:
-            unique_pretoken_counts_in_chunk = count_unique_pretokens_in_chunk(dataset_path, special_tokens, boundary_pair)
+            unique_pretoken_counts_in_chunk = count_unique_pretokens_in_chunk(
+                dataset_path, special_tokens, boundary_pair
+            )
             all_pretoken_counts.append(unique_pretoken_counts_in_chunk)
 
     for pretoken_counts in all_pretoken_counts:
         for key, value in pretoken_counts.items():
             unique_pretokens_to_counts[key] += value
-        
+
     return unique_pretokens_to_counts
+
 
 def pretokenize(data: bytes, special_tokens: list[bytes]) -> dict[bytes, int]:
 
     escaped_special_tokens = [re.escape(token) for token in special_tokens]
-    stripped_data_items = re.split(b'|'.join(escaped_special_tokens), data)
+    stripped_data_items = re.split(b"|".join(escaped_special_tokens), data)
 
     unique_pretokens_to_counts = defaultdict(int)
 
@@ -72,6 +79,7 @@ def pretokenize(data: bytes, special_tokens: list[bytes]) -> dict[bytes, int]:
 
     return unique_pretokens_to_counts
 
+
 def split_pretokens(pretokens_to_counts: dict[bytes, int]) -> dict[tuple[bytes], int]:
     split_pretokens_to_counts = defaultdict(int)
     for token_bytes, counts in pretokens_to_counts.items():
@@ -80,15 +88,20 @@ def split_pretokens(pretokens_to_counts: dict[bytes, int]) -> dict[tuple[bytes],
 
     return split_pretokens_to_counts
 
+
 def pretokenize_and_split(data: bytes, special_tokens: list[bytes]) -> dict[tuple[bytes], int]:
     pretokens_to_counts = pretokenize(data, special_tokens)
     split_pretokens_to_counts = split_pretokens(pretokens_to_counts)
     return split_pretokens_to_counts
 
-def parallel_pretokenize_and_split(dataset_path: Path, special_tokens: list[bytes], parallel: bool = True) -> dict[tuple[bytes], int]:
+
+def parallel_pretokenize_and_split(
+    dataset_path: Path, special_tokens: list[bytes], parallel: bool = True
+) -> dict[tuple[bytes], int]:
     pretokens_to_counts = parallel_pretokenize(dataset_path, special_tokens, parallel)
     split_pretokens_to_counts = split_pretokens(pretokens_to_counts)
     return split_pretokens_to_counts
+
 
 def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tuple[bytes, bytes]:
     # initialize counts of byte pairs
@@ -98,7 +111,7 @@ def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tup
     for pretoken, count in pretokens_to_counts.items():
         for byte_pair in zip(pretoken, pretoken[1:]):
             byte_pair_freqs[byte_pair] += count
-            
+
     # find most frequent index pair
     most_freq_pair: tuple[bytes, bytes] = tuple()
     most_freq_count = 0
@@ -110,30 +123,34 @@ def find_most_frequent_pair(pretokens_to_counts: dict[tuple[bytes], int]) -> tup
 
     return most_freq_pair
 
+
 def merge(pretokens_to_counts: dict[tuple[bytes], int], byte_pair: tuple[bytes, bytes]) -> dict[tuple[bytes], int]:
     new_pretokens_to_counts = {}
 
     for pretoken, counts in pretokens_to_counts.items():
-        new_pretoken = list() # tuples are immutable, so increment a list and then convert a tuple
+        new_pretoken = list()  # tuples are immutable, so increment a list and then convert a tuple
 
         i = 0
         while i < (len(pretoken) - 1):
-            bp = [pretoken[i], pretoken[i+1]]
+            bp = [pretoken[i], pretoken[i + 1]]
             if tuple(bp) == byte_pair:
-                new_pretoken.append(pretoken[i] + pretoken[i+1])
+                new_pretoken.append(pretoken[i] + pretoken[i + 1])
                 i += 1
-            elif (i == len(pretoken) - 2):
+            elif i == len(pretoken) - 2:
                 new_pretoken.extend(bp)
                 i += 1
             else:
                 new_pretoken.append(pretoken[i])
             i += 1
-        
+
         new_pretokens_to_counts[tuple(new_pretoken)] = counts
 
     return new_pretokens_to_counts
 
-def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str], parallel: bool = True) -> BPETokenizerParams:
+
+def train_bpe(
+    input_path: Path, vocab_size: int, special_tokens: list[str], parallel: bool = True
+) -> BPETokenizerParams:
 
     # initialize vocab for all the default bytes in UTF-8
     vocab: dict[int, bytes] = {i: bytes([i]) for i in range(256)}
@@ -154,9 +171,10 @@ def train_bpe(input_path: Path, vocab_size: int, special_tokens: list[str], para
         vocab[target_index] = byte_1 + byte_2
         pretokens_to_counts = merge(pretokens_to_counts, byte_pair)
 
-        merges.append(byte_pair) 
+        merges.append(byte_pair)
 
     return BPETokenizerParams(vocab=vocab, merges=merges)
+
 
 if __name__ == "__main__":
     dataset_path = Path("data/TinyStories-valid.txt")
