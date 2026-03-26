@@ -1,5 +1,6 @@
 import time
 from cs336_basics.bpe import (
+    count_byte_pair_freqs,
     find_most_frequent_pair,
     merge,
     parallel_pretokenize,
@@ -94,9 +95,10 @@ def test__find_most_frequent_pair__correctness():
 
     pairs = []
     for _ in range(num_merges):
-        pair = find_most_frequent_pair(pretokens_to_counts)
+        byte_pair_freqs = count_byte_pair_freqs(pretokens_to_counts)
+        pair = find_most_frequent_pair(byte_pair_freqs)
         pairs.append(pair)
-        pretokens_to_counts = merge(pretokens_to_counts, pair)
+        pretokens_to_counts = merge(pretokens_to_counts, pair, byte_pair_freqs)
 
     expected_pairs = [(b"s", b"t"), (b"e", b"st"), (b"o", b"w"), (b"l", b"ow"), (b"w", b"est"), (b"n", b"e")]
     assert pairs == expected_pairs
@@ -112,11 +114,12 @@ def test__find_most_frequent_pair__speed():
     total_find_time = 0
     for _ in range(num_merges):
         start_find_time = time.perf_counter()
-        pair = find_most_frequent_pair(pretokens_to_counts)
+        byte_pair_freqs = count_byte_pair_freqs(pretokens_to_counts)
+        pair = find_most_frequent_pair(byte_pair_freqs)
         end_find_time = time.perf_counter()
         total_find_time += end_find_time - start_find_time
 
-        pretokens_to_counts = merge(pretokens_to_counts, pair)
+        pretokens_to_counts = merge(pretokens_to_counts, pair, byte_pair_freqs)
 
     assert total_find_time < 0.05
 
@@ -130,10 +133,11 @@ def test__merge__speed():
 
     total_merge_time = 0
     for _ in range(num_merges):
-        pair = find_most_frequent_pair(pretokens_to_counts)
+        byte_pair_freqs = count_byte_pair_freqs(pretokens_to_counts)
+        pair = find_most_frequent_pair(byte_pair_freqs)
 
         start_merge_time = time.perf_counter()
-        pretokens_to_counts = merge(pretokens_to_counts, pair)
+        pretokens_to_counts = merge(pretokens_to_counts, pair, byte_pair_freqs)
         end_merge_time = time.perf_counter()
         total_merge_time += end_merge_time - start_merge_time
 
