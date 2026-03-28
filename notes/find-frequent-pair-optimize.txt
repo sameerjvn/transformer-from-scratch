@@ -65,38 +65,57 @@ After each round:
 
 eg:
 merged_pair = ("t", "h")
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-pretoken                        |  left pair   |  current pair  |  right pair  |  decreasing_pair  |  increasing_pair  |  updates
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-("p", "a", "t", "h")            |  None        |   ("p", "a")   |  ("a", "t")  |  None             |  None             |  decreasing_pair -= count; increasing_pair += count
-("p", "a", "t", "h")            |  ("p", "a")  |   ("a", "t")   |  ("t", "h")  |  current_pair     |  ("a", "th")      |  decreasing_pair -= count; increasing_pair += count
-("p", "a", "t", "h")            |  ("a", "t")  |   ("t", "h")   |  None        |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count
-("a", "t", "h", "t", "h", "e")  |  None        |   ("a", "t")   |  ("t", "h")  |  current_pair     |  ("a", "th")      |  decreasing_pair -= count; increasing_pair += count
-("a", "t", "h", "t", "h", "e")  |  ("a", "t")  |   ("t", "h")   |  ("h", "t")  |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count
-("a", "t", "h", "t", "h", "e")  |  ("t", "h")  |   ("h", "t")   |  ("t", "h")  |  current_pair     |  ("th", "th")     |  decreasing_pair -= count; increasing_pair += count
-("a", "t", "h", "t", "h", "e")  |  ("h", "t")  |   ("t", "h")   |  ("h", "e")  |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count
-("a", "t", "h", "t", "h", "e")  |  ("t", "h")  |   ("h", "e")   |  None        |  current_pair     |  ("th", "e")      |  decreasing_pair -= count; increasing_pair += count
-("a", "h", "e", "t")            |  None        |   ("a", "h")   |  ("h", "e")  |  None             |  None             |  decreasing_pair -= count; increasing_pair += count
-----------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pretoken                        |  left pair   | current byte | current pair  |  right pair  | decreasing_pair  |  increasing_pair  |  updates                                  | append_to_new_pretoken
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+("p", "a", "t", "h")            |  None        | p | ("p", "a")   |  ("a", "t")  |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  p
+("p", "a", "t", "h")            |  ("p", "a")  | a | ("a", "t")   |  ("t", "h")  |  current_pair     |  ("a", "th")      |  decreasing_pair -= count; increasing_pair += count  |  a
+("p", "a", "t", "h")            |  ("a", "t")  | t | ("t", "h")   |  None        |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count  |  th
+("p", "a", "t", "h")            |  ("t", "h")  | h | None         |  None        |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  None 
+("a", "t", "h", "t", "h", "e")  |  None        | a | ("a", "t")   |  ("t", "h")  |  current_pair     |  ("a", "th")      |  decreasing_pair -= count; increasing_pair += count  |  a
+("a", "t", "h", "t", "h", "e")  |  ("a", "t")  | t | ("t", "h")   |  ("h", "t")  |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count  |  th
+("a", "t", "h", "t", "h", "e")  |  ("t", "h")  | h | ("h", "t")   |  ("t", "h")  |  current_pair     |  ("th", "th")     |  decreasing_pair -= count; increasing_pair += count  |  None
+("a", "t", "h", "t", "h", "e")  |  ("h", "t")  | t | ("t", "h")   |  ("h", "e")  |  current_pair     |  None             |  decreasing_pair -= count; increasing_pair += count  |  th
+("a", "t", "h", "t", "h", "e")  |  ("t", "h")  | h | ("h", "e")   |  None        |  current_pair     |  ("th", "e")      |  decreasing_pair -= count; increasing_pair += count  |  None
+("a", "t", "h", "t", "h", "e")  |  ("h", "e")  | e | None         |  None        |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  e 
+("a", "h", "e", "t")            |  None        | a | ("a", "h")   |  ("h", "e")  |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  a
+("a", "h", "e", "t")            |  ("a", "h")  | h | ("h", "e")   |  ("e", "t")  |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  h 
+("a", "h", "e", "t")            |  ("h", "e")  | e | ("e", "t")   |  None        |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  e 
+("a", "h", "e", "t")            |  ("e", "t")  | t | None         |  None        |  None             |  None             |  decreasing_pair -= count; increasing_pair += count  |  t 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 So the update logic always stays the same. the only thing that changes is how the increasing_pair is selected. And the logic for that is as follows:
 
-if current_pair doesn't share any bytes with the merged pair, don't update anything
-else, keep going
+prev_pair_merged = False
+for i in range(len(pretoken)):
+    current pair is a tuple of (i)th byte and (i+1)th byte
 
-decreasing_pair, increasing_pair = None, None
-right_increasing_byte, left_increasing_byte = None, None
+    if current_pair doesn't share any bytes with the merged pair, don't update anything
+    else, keep going
 
-if left_pair == merged_pair:                            
-    decreasing_pair = current_pair
-    left_increasing_byte = merge_bytes(left_pair)       
-elif left_pair == None:
-    left_increasing_byte = first byte of current_pair   
+    decreasing_pair, increasing_pair = None, None
+    right_increasing_byte, left_increasing_byte = None, None
 
-if right_pair == merged_pair:                           
-    decreasing_pair = current_pair
-    right_increasing_byte = merge_bytes(right_pair)     
-elif right_pair == None:
-    right_increasing_byte = second byte of current_pair   
+    if left_pair == merged_pair:                            
+        decreasing_pair = current_pair
+        left_increasing_byte = merge_bytes(left_pair)       
+    elif left_pair == None:
+        left_increasing_byte = first byte of current_pair   
 
-increasing_pair = left_increasing_byte + right_increasing_byte
+    if right_pair == merged_pair:                           
+        decreasing_pair = current_pair
+        right_increasing_byte = merge_bytes(right_pair)     
+    elif right_pair == None:
+        right_increasing_byte = second byte of current_pair   
+
+    increasing_pair = (left_increasing_byte, right_increasing_byte)
+    
+    if current pair is merge pair:
+        append current pair to new pretoken
+        prev_pair_merged = True
+    elif prev_token_merged:
+        # do nothing to new pretoken
+        prev_pair_merged = False
+    else:
+        append current byte to new pretoken
+        prev_pair_merged = False

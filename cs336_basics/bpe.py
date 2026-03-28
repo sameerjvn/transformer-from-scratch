@@ -138,35 +138,68 @@ def merge(
     for pretoken, counts in pretokens_to_counts.items():
         new_pretoken = list()  # tuples are immutable, so increment a list and then convert a tuple
 
-        i = 0
-        while i < (len(pretoken) - 1):
-            current_pair = [pretoken[i], pretoken[i + 1]]
+        prev_pair_merged = False
+        for i in range(len(pretoken)):
+            current_byte = pretoken[i]
+            current_pair = None
 
-            left_pair, right_pair = None, None
-            if i > 0:
-                left_pair = [pretoken[i - 1], pretoken[i]]
-            if i < (len(pretoken) - 2):
-                right_pair = [pretoken[i + 1], pretoken[i + 2]]
+            is_last_byte = i == (len(pretoken) - 1)
+            if is_last_byte:
+                if not prev_pair_merged:
+                    new_pretoken.append(current_byte)
+                break
 
-            decreasing_pair, increasing_pair = None, None
+            current_pair = (pretoken[i], pretoken[i + 1])
 
-            if tuple(current_pair) == merge_pair:
-                new_pretoken.append(pretoken[i] + pretoken[i + 1])
-                i += 1
-            elif i == len(pretoken) - 2:
-                new_pretoken.extend(current_pair)
-                i += 1
-            else:
-                new_pretoken.append(pretoken[i])
-            i += 1
+            has_common_bytes = merge_pair[0] in current_pair or merge_pair[1] in current_pair
+            if not has_common_bytes:
+                continue
+
+            update_byte_pair_freqs(merge_pair, byte_pair_freqs, pretoken, counts, i, current_pair)
+
+            if current_pair == merge_pair:
+                new_pretoken.append(b"".join(list(current_pair)))
+                prev_pair_merged = True
 
         new_pretokens_to_counts[tuple(new_pretoken)] = counts
 
     return new_pretokens_to_counts
 
 
+def update_byte_pair_freqs(merge_pair, byte_pair_freqs, pretoken, counts, i, current_pair):
+    left_pair, right_pair = None, None
+    if i > 0:
+        left_pair = [pretoken[i - 1], pretoken[i]]
+    if i < (len(pretoken) - 2):
+        right_pair = [pretoken[i + 1], pretoken[i + 2]]
+
+    decreasing_pair, increasing_pair = None, None
+
+    # freq update logic
+    right_increasing_byte, left_increasing_byte = None, None
+    if left_pair == merge_pair:
+        decreasing_pair = current_pair
+        left_increasing_byte = b"".join(left_pair)
+    elif left_pair is None:
+        left_increasing_byte = current_pair[0]
+
+    if right_pair == merge_pair:
+        decreasing_pair = current_pair
+        right_increasing_byte = b"".join(right_pair)
+    elif right_pair is None:
+        right_increasing_byte = current_pair[1]
+
+    increasing_pair = [left_increasing_byte, right_increasing_byte]
+
+    if decreasing_pair is not None:
+        byte_pair_freqs[tuple(decreasing_pair)] -= counts
+
+    if increasing_pair is not None:
+        byte_pair_freqs[tuple(increasing_pair)] += counts
+
+
 def train_bpe(
-    input_path: Path, vocab_size: int, special_tokens: list[str], parallel: bool = True
+    input_path: Path, vocab_size: int, special_tokens: list[str], parallel: bool = False
 ) -> BPETokenizerParams:
 
     # initialize vocab for all the default bytes in UTF-8
