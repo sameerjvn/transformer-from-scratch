@@ -153,6 +153,8 @@ def merge(
 
             has_common_bytes = merge_pair[0] in current_pair or merge_pair[1] in current_pair
             if not has_common_bytes:
+                new_pretoken.append(current_byte)
+                prev_pair_merged = False
                 continue
 
             update_byte_pair_freqs(merge_pair, byte_pair_freqs, pretoken, counts, i, current_pair)
@@ -160,42 +162,53 @@ def merge(
             if current_pair == merge_pair:
                 new_pretoken.append(b"".join(list(current_pair)))
                 prev_pair_merged = True
+            elif prev_pair_merged:
+                prev_pair_merged = False
+            else:
+                new_pretoken.append(current_byte)
+                prev_pair_merged = False
 
         new_pretokens_to_counts[tuple(new_pretoken)] = counts
 
     return new_pretokens_to_counts
 
 
-def update_byte_pair_freqs(merge_pair, byte_pair_freqs, pretoken, counts, i, current_pair):
-    left_pair, right_pair = None, None
+def update_byte_pair_freqs(
+    merge_pair: tuple[bytes, bytes],
+    byte_pair_freqs: dict[tuple[bytes, bytes], int],
+    pretoken: tuple[bytes, ...],
+    counts: int,
+    i: int,
+    current_pair: tuple[bytes, bytes],
+) -> None:
+    left_pair: list[bytes] | None = None
+    right_pair: list[bytes] | None = None
     if i > 0:
         left_pair = [pretoken[i - 1], pretoken[i]]
     if i < (len(pretoken) - 2):
         right_pair = [pretoken[i + 1], pretoken[i + 2]]
 
-    decreasing_pair, increasing_pair = None, None
+    decreasing_pair = None
 
-    # freq update logic
-    right_increasing_byte, left_increasing_byte = None, None
-    if left_pair == merge_pair:
+    # freq update logic: decrement the merge pair when it appears directly
+    if current_pair == merge_pair:
         decreasing_pair = current_pair
-        left_increasing_byte = b"".join(left_pair)
-    elif left_pair is None:
-        left_increasing_byte = current_pair[0]
 
-    if right_pair == merge_pair:
+    left_is_merge = left_pair == list(merge_pair)
+    right_is_merge = right_pair == list(merge_pair)
+
+    # when a neighbor is the merge pair, current_pair disappears and a new pair forms
+    left_increasing_byte, right_increasing_byte = None, None
+    if left_is_merge or right_is_merge:
         decreasing_pair = current_pair
-        right_increasing_byte = b"".join(right_pair)
-    elif right_pair is None:
-        right_increasing_byte = current_pair[1]
-
-    increasing_pair = [left_increasing_byte, right_increasing_byte]
+        left_increasing_byte = b"".join(left_pair) if left_is_merge else current_pair[0]
+        right_increasing_byte = b"".join(right_pair) if right_is_merge else current_pair[1]
 
     if decreasing_pair is not None:
         byte_pair_freqs[tuple(decreasing_pair)] -= counts
 
-    if increasing_pair is not None:
-        byte_pair_freqs[tuple(increasing_pair)] += counts
+    if left_increasing_byte is not None and right_increasing_byte is not None:
+        byte_pair_freqs[(left_increasing_byte, right_increasing_byte)] += counts
 
 
 def train_bpe(
